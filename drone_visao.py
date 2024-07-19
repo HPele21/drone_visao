@@ -2,10 +2,6 @@ import cv2 #lib pro processamento imagem e video
 import numpy as np #lib pra manipular os arrays
 from pyzbar.pyzbar import decode #lib pra decodificar qrcode e codigo de barras
 
-# ===================================================================================================================================================================
-# QRcode / codigo de barras
-# ===================================================================================================================================================================
-
 cap = cv2.VideoCapture(0) #objeto para a captura e webcam id
 cap.set(3,640) #largura(640 pixels)
 cap.set(4,480) #altura(480 pixels)
@@ -13,17 +9,33 @@ cap.set(4,480) #altura(480 pixels)
 # ===================================================================================================================================================================
 # Limiarização
 # ===================================================================================================================================================================
-def preProcess(img):
-    imgPre = cv2.GaussianBlur(img,(5,5),3)
-    imgPre = cv2.Canny(imgPre,90,140)
+def preProcess(img): #funçao pro pre processamento da imagem
+
+    imgPre = cv2.GaussianBlur(img,(5,5),3) #desfoque para reduzir os ruidos
+    imgPre = cv2.Canny(imgPre,90,140) #detector de bordas
     kernel = np.ones((4,4),np.uint8)
-    imgPre = cv2.dilate(imgPre,kernel,iterations = 2)
-    imgPre = cv2.erode(imgPre,kernel,iterations = 2)
-    return imgPre
+    imgPre = cv2.dilate(imgPre,kernel,iterations = 2) #dilata a imagem para preencher pequenos buracos
+    imgPre = cv2.erode(imgPre,kernel,iterations = 2) #erode a imagem para diminuir o tamanho dos objetos
+    return imgPre #retorna a imagem processada
+
 
 while True: #loop
 
     success,img = cap.read() #faz a leitura
+
+    # ===================================================================================================================================================================
+    # Contornos na imagem
+    # ===================================================================================================================================================================
+    contours,hi = cv2.findContours(imgPre,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
+
+    for cnt in contours:
+        x,y,w,h = cv2.boundingRect(cnt)
+
+        cv2.rectangle(img,(x,y),(x+w,y+h),(255,0,255),2)
+
+# ===================================================================================================================================================================
+# QRcode / codigo de barras
+# ===================================================================================================================================================================
 
     for barcode in decode(img): #decodifica qualquer qrcode ou codigo de barras
         print(barcode.data)
@@ -37,6 +49,7 @@ while True: #loop
 
     cv2.imshow('Result', img) #mostra a imagem
     cv2.waitKey(1) #delay
+
 
     imgPre = preProcess(img)
     cv2.imshow('IMG', imgPre)
